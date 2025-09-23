@@ -15,10 +15,10 @@ public class TerrainGenerator : MonoBehaviour
     public int height = 128;
 
     [Header("Noise (fBM)")]
-    public float scale = 30f;
+    public float scale = 30f; // Чем меньше scale, тем больше значение sampleX меняется при единичном шаге x
     public int octaves = 4;
     [Range(0f, 1f)] public float persistence = 0.5f;
-    public float lacunarity = 2f;
+    public float frequencyCoef = 2f;
     public int seed = 0;
     public Vector2 offset = Vector2.zero;
 
@@ -34,9 +34,7 @@ public class TerrainGenerator : MonoBehaviour
     [Range(0f, 1f)] public float sandThreshold = 0.40f;
     [Range(0f, 1f)] public float grassThreshold = 0.60f;
     [Range(0f, 1f)] public float hillThreshold = 0.88f;
-    // mountain: > hillThreshold
 
-    // Public API used by the editor buttons
     public void GenerateTerrain()
     {
         if (tilemap == null)
@@ -47,15 +45,14 @@ public class TerrainGenerator : MonoBehaviour
 
         CustomPerlin perlin = new CustomPerlin(seed);
 
-        // Clear first (как было оговорено)
         ClearTerrain();
 
-        System.Random prng = new System.Random(seed);
+        FastRandom prng = new FastRandom(seed);
         Vector2[] octaveOffsets = new Vector2[octaves];
         for (int i = 0; i < octaves; i++)
         {
-            float offsetX = (float)(prng.Next(-100000, 100000)) + offset.x;
-            float offsetY = (float)(prng.Next(-100000, 100000)) + offset.y;
+            float offsetX = (prng.Next(-100000, 100000)) + offset.x;
+            float offsetY = (prng.Next(-100000, 100000)) + offset.y;
             octaveOffsets[i] = new Vector2(offsetX, offsetY);
         }
 
@@ -76,15 +73,16 @@ public class TerrainGenerator : MonoBehaviour
 
                 for (int i = 0; i < octaves; i++)
                 {
-                    float sampleX = (x - width / 2f) / scale * frequency + octaveOffsets[i].x;
-                    float sampleY = (y - height / 2f) / scale * frequency + octaveOffsets[i].y;
+                    float sampleX = (x - (width / 2f)) / scale * frequency + octaveOffsets[i].x;
+                    float sampleY = (y - (height / 2f)) / scale * frequency + octaveOffsets[i].y;
 
+                    // fractal Brownian motion
                     float perlinVal = perlin.Noise(sampleX, sampleY); // 0..1
                     float perlinValueCentered = perlinVal * 2f - 1f;   // -1..1, чтобы октавы могли быть отрицательными
                     noiseHeight += perlinValueCentered * amplitude;
 
                     amplitude *= persistence;
-                    frequency *= lacunarity;
+                    frequency *= frequencyCoef;
                 }
 
                 if (noiseHeight > maxLocal) maxLocal = noiseHeight;
@@ -93,7 +91,7 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
 
-        // Normalize to 0..1
+        // Нормализуем к 0..1
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -102,7 +100,6 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
 
-        // Fill Tilemap
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)

@@ -382,6 +382,7 @@
 -analyzer:"D:/2022.3.7f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll"
 -analyzer:"D:/2022.3.7f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 "Assets/Karasinius/Scripts/CustomPerlin.cs"
+"Assets/Karasinius/Scripts/FastRandom.cs"
 "Assets/Karasinius/Scripts/TerrainGenerator.cs"
 -langversion:9.0
 
