@@ -119,7 +119,7 @@ public class SidewinderGenerator : MonoBehaviour
         PaintAllWalls();
 
         int cx = 0, cy = 0, runStart = 0;
-        int steps = 0;
+        //int steps = 0;
         while (cy < cellRows)
         {
             int batch = Math.Min(playStepsPerBatch, 100000);

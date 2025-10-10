@@ -384,6 +384,7 @@
 "Assets/Karasinius/Scripts/Labyrinth/DrunkardsWalkCarver.cs"
 "Assets/Karasinius/Scripts/Labyrinth/GrowingTreeGenerator.cs"
 "Assets/Karasinius/Scripts/Labyrinth/KruskalMazeGenerator.cs"
+"Assets/Karasinius/Scripts/Labyrinth/RecursiveDivisionGenerator.cs"
 "Assets/Karasinius/Scripts/Labyrinth/SidewinderGenerator.cs"
 "Assets/Karasinius/Scripts/Labyrinth/SimpleRNG.cs"
 "Assets/Karasinius/Scripts/Noise/CustomPerlin.cs"
