@@ -37,7 +37,7 @@ public class CustomPerlin
             perm[i] = p[i & 255];
     }
 
-    /// —глаживающа€ функци€ (fade) Ч классический полином 6t^5 - 15t^4 + 10t^3
+    // —глаживающа€ функци€ (fade) Ч классический полином 6t^5 - 15t^4 + 10t^3
     private static float Fade(float t)
     {
         return t * t * t * (t * (t * 6f - 15f) + 10f);

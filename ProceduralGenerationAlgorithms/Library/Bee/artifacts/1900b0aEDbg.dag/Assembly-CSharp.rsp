@@ -381,9 +381,14 @@
 -r:"Library/Bee/artifacts/1900b0aEDbg.dag/UnityEngine.UI.ref.dll"
 -analyzer:"D:/2022.3.7f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll"
 -analyzer:"D:/2022.3.7f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
-"Assets/Karasinius/Scripts/CustomPerlin.cs"
-"Assets/Karasinius/Scripts/FastRandom.cs"
-"Assets/Karasinius/Scripts/TerrainGenerator.cs"
+"Assets/Karasinius/Scripts/Labyrinth/DrunkardsWalkCarver.cs"
+"Assets/Karasinius/Scripts/Labyrinth/GrowingTreeGenerator.cs"
+"Assets/Karasinius/Scripts/Labyrinth/KruskalMazeGenerator.cs"
+"Assets/Karasinius/Scripts/Labyrinth/SidewinderGenerator.cs"
+"Assets/Karasinius/Scripts/Labyrinth/SimpleRNG.cs"
+"Assets/Karasinius/Scripts/Noise/CustomPerlin.cs"
+"Assets/Karasinius/Scripts/Noise/FastRandom.cs"
+"Assets/Karasinius/Scripts/Noise/TerrainGenerator.cs"
 -langversion:9.0
 
 /deterministic
