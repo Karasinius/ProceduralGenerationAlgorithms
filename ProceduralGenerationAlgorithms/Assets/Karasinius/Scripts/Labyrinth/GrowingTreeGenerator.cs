@@ -13,8 +13,8 @@ public class GrowingTreeGenerator : MonoBehaviour
     public Tilemap targetTilemap;
     public TileBase wallTile;
     public TileBase floorTile;
-    public int mapWidth = 81;   // рекомендуется НЕчётные
-    public int mapHeight = 51;  // рекомендуется НЕчётные
+    public int mapWidth = 81;   // нужны НЕчётные
+    public int mapHeight = 51;  // нужны НЕчётные
     public Vector2Int mapOrigin = new Vector2Int(0, 0);
 
     [Header("Algorithm")]
@@ -29,37 +29,31 @@ public class GrowingTreeGenerator : MonoBehaviour
 
     [Header("Animation (Play Mode)")]
     public bool animateInPlay = false;
-    public int stepsPerBatch = 200;      // сколько "итераций" алгоритма выполнить за один батч
+    public int stepsPerBatch = 200;      
     [Range(0f, 1f)]
-    public float playBatchDelay = 0.01f; // задержка между батчами в корутине (сек)
+    public float playBatchDelay = 0.01f; 
 
     [Header("Editor Animation (Edit Mode)")]
     public int editorStepsPerBatch = 200;
     public float editorBatchDelay = 0.03f;
 
-    // Внутренние
-    private bool[,] isFloor; // размер mapWidth x mapHeight
+    private bool[,] isFloor; 
     private SimpleRNG rng;
 
-    // cell grid (логические клетки для лабиринта)
-    private int cellCols; // число клеток по X = (mapWidth-1)/2
-    private int cellRows; // по Y = (mapHeight-1)/2
+    private int cellCols; 
+    private int cellRows; 
 
-    // editor animation state
 #if UNITY_EDITOR
     private bool editorAnimating = false;
-    private List<Vector2Int> editorActiveList; // список клеток (cell coordinates) как в алгоритме
-    private bool[,] editorVisited; // [cellCols,cellRows]
+    private List<Vector2Int> editorActiveList; 
+    private bool[,] editorVisited; 
     private double editorLastBatchTime = 0.0;
 #endif
 
-    // Play-mode coroutine handle
     private Coroutine playCoroutine = null;
 
-    // Ensure no auto-run in Start
     private void Start()
     {
-        // intentionally empty: generator runs only from editor buttons or manually in Play mode.
     }
 
     #region Public entry points
@@ -78,7 +72,6 @@ public class GrowingTreeGenerator : MonoBehaviour
         }
     }
 
-    // Синхронная (немедленная) генерация — используется для редактора
     public void GenerateSync()
     {
         if (!ValidateSetup()) return;
@@ -92,7 +85,6 @@ public class GrowingTreeGenerator : MonoBehaviour
 #endif
     }
 
-    // Корутина для Play mode — с батчами и задержками
     public IEnumerator GenerateRoutine()
     {
         if (!ValidateSetup()) yield break;
@@ -105,19 +97,14 @@ public class GrowingTreeGenerator : MonoBehaviour
             PaintTilemap();
             yield break;
         }
-
-        // Animated in Play-mode
         PaintAllWalls();
-        // подготовим рабочие структуры
         List<Vector2Int> active = new List<Vector2Int>();
         bool[,] visited = new bool[cellCols, cellRows];
 
-        // стартовая клетка
         int sx = rng.Next(0, cellCols);
         int sy = rng.Next(0, cellRows);
         visited[sx, sy] = true;
         active.Add(new Vector2Int(sx, sy));
-        // carve starting cell
         CarveCellCellcoords(sx, sy);
 
         while (active.Count > 0)
@@ -132,14 +119,12 @@ public class GrowingTreeGenerator : MonoBehaviour
                 if (neighbors.Count > 0)
                 {
                     Vector2Int next = neighbors[rng.Next(0, neighbors.Count)];
-                    // carve passage between cur and next
                     CarvePassageBetweenCells(cur, next);
                     visited[next.x, next.y] = true;
                     active.Add(new Vector2Int(next.x, next.y));
                 }
                 else
                 {
-                    // remove current cell
                     active.RemoveAt(idx);
                 }
             }
@@ -157,13 +142,9 @@ public class GrowingTreeGenerator : MonoBehaviour
 
     private void RunGrowingTreeSync()
     {
-        // paint walls initially in memory
-        // (we will paint Tilemap at the end)
-        // structures
         bool[,] visited = new bool[cellCols, cellRows];
         List<Vector2Int> active = new List<Vector2Int>();
 
-        // pick starting cell
         int sx = rng.Next(0, cellCols);
         int sy = rng.Next(0, cellRows);
         visited[sx, sy] = true;
@@ -206,7 +187,7 @@ public class GrowingTreeGenerator : MonoBehaviour
             return false;
         }
 
-        // ensure odd sizes (typical for maze generation where cells are separated by walls)
+        // Нужны нечетные размеры 
         if (mapWidth < 3) mapWidth = 3;
         if (mapHeight < 3) mapHeight = 3;
 
@@ -237,11 +218,8 @@ public class GrowingTreeGenerator : MonoBehaviour
     private void PrepareMapArrays()
     {
         isFloor = new bool[mapWidth, mapHeight];
-        // initially everything false (walls)
     }
 
-    // Вспомогательная карвинговая логика: cellCoords -> map coords
-    // cell (cx, cy) maps to mapX = cx * 2 + 1, mapY = cy * 2 + 1 (относительно mapOrigin)
     private void CarveCellCellcoords(int cx, int cy)
     {
         int mapX = cx * 2 + 1;
@@ -249,10 +227,8 @@ public class GrowingTreeGenerator : MonoBehaviour
         SetFloorAtMapLocal(mapX, mapY);
     }
 
-    // carve passage between two neighbouring cells (cell coords)
     private void CarvePassageBetweenCells(Vector2Int a, Vector2Int b)
     {
-        // carve both cells and the wall between them
         CarveCellCellcoords(a.x, a.y);
         CarveCellCellcoords(b.x, b.y);
 
@@ -275,13 +251,11 @@ public class GrowingTreeGenerator : MonoBehaviour
         isFloor[x, y] = true;
     }
 
-    // Возвращает список соседних клеток (cell coords) непосещённых
     private List<Vector2Int> GetUnvisitedNeighbors(Vector2Int cell, bool[,] visited)
     {
         var res = new List<Vector2Int>(4);
         int cx = cell.x;
         int cy = cell.y;
-        // 4-way neighbors on cell grid
         if (cx > 0 && !visited[cx - 1, cy]) res.Add(new Vector2Int(cx - 1, cy));
         if (cx + 1 < cellCols && !visited[cx + 1, cy]) res.Add(new Vector2Int(cx + 1, cy));
         if (cy > 0 && !visited[cx, cy - 1]) res.Add(new Vector2Int(cx, cy - 1));
@@ -289,7 +263,6 @@ public class GrowingTreeGenerator : MonoBehaviour
         return res;
     }
 
-    // выбор индекса в active list по выбранной стратегии
     private int ChooseIndex(int listCount)
     {
         if (listCount <= 0) return -1;
@@ -343,9 +316,6 @@ public class GrowingTreeGenerator : MonoBehaviour
     #endregion
 
 #if UNITY_EDITOR
-    // -------------------
-    // Editor-mode animated generation
-    // -------------------
 
     public void StartEditorAnimatedGeneration()
     {
@@ -359,7 +329,6 @@ public class GrowingTreeGenerator : MonoBehaviour
         PrepareRandom();
         PrepareMapArrays();
 
-        // init visited and active list
         editorVisited = new bool[cellCols, cellRows];
         editorActiveList = new List<Vector2Int>();
 
@@ -369,7 +338,6 @@ public class GrowingTreeGenerator : MonoBehaviour
         editorActiveList.Add(new Vector2Int(sx, sy));
         CarveCellCellcoords(sx, sy);
 
-        // paint walls first
         PaintAllWalls();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -426,7 +394,6 @@ public class GrowingTreeGenerator : MonoBehaviour
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
     }
 
-    // Custom inspector buttons
     [UnityEditor.CustomEditor(typeof(GrowingTreeGenerator))]
     private class GrowingTreeEditor : UnityEditor.Editor
     {

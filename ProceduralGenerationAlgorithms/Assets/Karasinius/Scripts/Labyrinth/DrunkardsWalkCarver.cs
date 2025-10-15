@@ -8,43 +8,41 @@ using UnityEngine.Tilemaps;
 public class DrunkardsWalkCarver : MonoBehaviour
 {
     [Header("Map")]
-    public Tilemap targetTilemap;        // назначить Tilemap
-    public TileBase wallTile;           // тайл стены
-    public TileBase floorTile;          // тайл пола
+    public Tilemap targetTilemap;        
+    public TileBase wallTile;           
+    public TileBase floorTile;          
     public int mapWidth = 80;
     public int mapHeight = 60;
-    public Vector2Int mapOrigin = new Vector2Int(0, 0); // нижний левый угол в Tilemap coordinates
+    public Vector2Int mapOrigin = new Vector2Int(0, 0); 
 
     [Header("Walkers")]
     public int numWalkers = 4;
     public int maxStepsPerWalker = 10000;
     [Range(0f, 1f)]
-    public float targetFloorPercent = 0.35f; // целевая доля вычищенных клеток
-    public int carveRadius = 1; // радиус "лопаты" волкера
+    public float targetFloorPercent = 0.35f; 
+    public int carveRadius = 1; 
 
     [Header("Random / Reproducibility")]
     public bool useRandomSeed = true;
     public int seed = 12345;
 
     [Header("Behavior")]
-    public bool wrapEdges = false; // заход волкера за границу — телепорт к противоположной стороне
-    public bool reflectEdges = false; // отражение (игнорируется если wrapEdges=true)
+    public bool wrapEdges = false; 
+    public bool reflectEdges = false; 
 
     [Header("Animation (Play Mode)")]
-    public bool animateGeneration = false; // анимация в Play mode
+    public bool animateGeneration = false; 
     [Range(0f, 0.5f)]
-    public float stepDelay = 0.0005f; // delay между батчами в корутине (сек)
-    public int stepsPerBatch = 50; // сколько шагов выполнять между задержками в coroutine (Play mode)
+    public float stepDelay = 0.0005f; 
+    public int stepsPerBatch = 50; 
 
     [Header("Editor Animation (Edit Mode)")]
-    public float editorStepDelay = 0.05f; // задержка между батчами в редакторе (сек)
-    public int editorStepsPerBatch = 100; // сколько шагов выполнять в одном батче в редакторе
+    public float editorStepDelay = 0.05f; 
+    public int editorStepsPerBatch = 100; 
 
-    // Внутренние
     private bool[,] isFloor;
     private System.Random rng;
 
-    // Editor-generation state
 #if UNITY_EDITOR
     private bool editorAnimating = false;
     private List<Vector2Int> editorStarts;
@@ -55,20 +53,15 @@ public class DrunkardsWalkCarver : MonoBehaviour
     private int editorGoal;
     private double editorLastBatchTime = 0.0;
 #endif
-
-    // convenience
     private int totalTiles => mapWidth * mapHeight;
     private int targetFloorCount => Mathf.Clamp((int)(targetFloorPercent * totalTiles), 1, totalTiles);
-
-    // NOTE: убрал автозапуск в Start() — генерация только из редактора/через публичные методы
     private void Start()
     {
-        // intentionally empty: generation is performed only via inspector (editor) buttons or by calling GenerateRoutine in Play mode manually.
+
     }
 
     #region Public generation entry points
 
-    // Генерация из редактора/контекстного меню (синхронно)
     [ContextMenu("Generate Drunkard's Walk (Play Mode / Sync)")]
     public void GenerateContext()
     {
@@ -78,12 +71,10 @@ public class DrunkardsWalkCarver : MonoBehaviour
         }
         else
         {
-            // Editor mode synchronous
             GenerateSync();
         }
     }
 
-    // Синхронная генерация (используется в редакторе/быстрое)
     public void GenerateSync()
     {
         if (targetTilemap == null)
@@ -102,7 +93,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
 #endif
     }
 
-    // Корутина для Play mode — с батчевой задержкой между шагами (анимация в Play)
     public IEnumerator GenerateRoutine()
     {
         if (targetTilemap == null)
@@ -125,7 +115,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
         int goal = targetFloorCount;
         List<Vector2Int> starts = ChooseStarts();
 
-        // paint walls first
         PaintAllWalls();
 
         foreach (var start in starts)
@@ -134,7 +123,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
             int steps = 0;
             while (steps < maxStepsPerWalker && carved < goal)
             {
-                // выполняем батч шагов
                 int batch = Mathf.Min(stepsPerBatch, maxStepsPerWalker - steps);
                 for (int i = 0; i < batch && carved < goal; i++)
                 {
@@ -143,7 +131,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
                     steps++;
                 }
 
-                // обновляем визуал (по окончании батча)
                 PaintTilemap();
                 yield return new WaitForSeconds(stepDelay);
             }
@@ -151,7 +138,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
             if (carved >= goal) break;
         }
 
-        // финальная отрисовка
         PaintTilemap();
     }
 
@@ -169,7 +155,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
     private void InitMap()
     {
         isFloor = new bool[mapWidth, mapHeight];
-        // false = wall, true = floor
     }
 
     private List<Vector2Int> ChooseStarts()
@@ -204,7 +189,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
         }
     }
 
-    // Возвращает сколько новых клеток стало полом (0..)
     private int CarveAt(Vector2Int mapPos)
     {
         int newCarved = 0;
@@ -213,7 +197,7 @@ public class DrunkardsWalkCarver : MonoBehaviour
         {
             for (int dy = -r; dy <= r; dy++)
             {
-                if (dx * dx + dy * dy > r * r) continue; // круглый радиус
+                if (dx * dx + dy * dy > r * r) continue; 
                 int x = mapPos.x + dx;
                 int y = mapPos.y + dy;
                 if (!IsInsideMap(x, y)) continue;
@@ -229,7 +213,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
 
     private Vector2Int StepFrom(Vector2Int pos)
     {
-        // 4-way step (up/down/left/right) равновероятно
         int dir = rng.Next(0, 4);
         Vector2Int next = pos;
         switch (dir)
@@ -278,7 +261,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
     {
         if (targetTilemap == null) return;
 
-        // clear existing area first
         for (int x = 0; x < mapWidth; x++)
         {
             for (int y = 0; y < mapHeight; y++)
@@ -309,11 +291,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
     #endregion
 
 #if UNITY_EDITOR
-    // -------------------
-    // Editor-mode animated generation using EditorApplication.update
-    // -------------------
-
-    // Запуск пошаговой анимации в редакторе
     public void StartEditorAnimatedGeneration()
     {
         if (targetTilemap == null)
@@ -343,7 +320,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
         editorGoal = targetFloorCount;
         editorLastBatchTime = UnityEditor.EditorApplication.timeSinceStartup;
 
-        // paint walls initially
         PaintAllWalls();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -352,7 +328,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
         UnityEditor.EditorApplication.update += EditorUpdateStep;
     }
 
-    // Остановить редакторную анимацию (и выполнить финальную отрисовку)
     public void StopEditorAnimatedGeneration()
     {
         if (!editorAnimating) return;
@@ -363,25 +338,22 @@ public class DrunkardsWalkCarver : MonoBehaviour
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
     }
 
-    // Главный update-обработчик для пошаговой генерации в редакторе
     private void EditorUpdateStep()
     {
         if (!editorAnimating) return;
 
         double now = UnityEditor.EditorApplication.timeSinceStartup;
         if (now - editorLastBatchTime < editorStepDelay)
-            return; // ждём задержку
+            return; 
 
         editorLastBatchTime = now;
 
-        // Если достигли цели или не осталось волкеров — заканчиваем
         if (editorCarved >= editorGoal || editorCurrentWalkerIndex >= editorStarts.Count)
         {
             StopEditorAnimatedGeneration();
             return;
         }
 
-        // Выполняем один батч шагов текущего волкера
         int batch = Mathf.Min(editorStepsPerBatch, maxStepsPerWalker - editorCurrentStepsForWalker);
         for (int i = 0; i < batch && editorCarved < editorGoal; i++)
         {
@@ -391,7 +363,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
 
             if (editorCurrentStepsForWalker >= maxStepsPerWalker)
             {
-                // переходим к следующему волкеру
                 editorCurrentWalkerIndex++;
                 if (editorCurrentWalkerIndex < editorStarts.Count)
                 {
@@ -402,12 +373,10 @@ public class DrunkardsWalkCarver : MonoBehaviour
             }
         }
 
-        // Обновляем визуал после батча
         PaintTilemap();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        // Если достигли цели — остановиться
         if (editorCarved >= editorGoal || editorCurrentWalkerIndex >= editorStarts.Count)
         {
             StopEditorAnimatedGeneration();
@@ -416,7 +385,6 @@ public class DrunkardsWalkCarver : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR
-    // В инспекторе покажем кнопки генерации для быстрого теста (Editor-only помощь)
     [UnityEditor.CustomEditor(typeof(DrunkardsWalkCarver))]
     private class DrunkardEditor : UnityEditor.Editor
     {

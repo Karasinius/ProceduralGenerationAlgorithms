@@ -1,8 +1,3 @@
-// RecursiveDivisionGenerator.cs (updated)
-// Recursive Division (wall-adder) maze generator Ч fixed wall drawing for Tilemap.
-// Editor-only controls + Editor-mode animated build (batch + delay).
-// Requires SimpleRNG.cs in project.
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,11 +6,10 @@ using UnityEngine.Tilemaps;
 [ExecuteAlways]
 public class RecursiveDivisionGenerator : MonoBehaviour
 {
-    // Map & tiles
     public Tilemap targetTilemap;
     public TileBase wallTile;
     public TileBase floorTile;
-    public int mapWidth = 81;   // рекомендуетс€ нечЄтные размеры
+    public int mapWidth = 81;   
     public int mapHeight = 51;
     public Vector2Int mapOrigin = new Vector2Int(0, 0);
 
@@ -24,30 +18,25 @@ public class RecursiveDivisionGenerator : MonoBehaviour
     public int seed = 12345;
 
     [Header("Editor Animation (only editor)")]
-    public int editorStepsPerBatch = 8;    // сколько делений (разрезов) выполн€ть за батч
-    public float editorBatchDelay = 0.03f; // задержка между батчами (сек)
+    public int editorStepsPerBatch = 8;    
+    public float editorBatchDelay = 0.03f; 
 
     [Header("Play-mode (optional)")]
     public bool animateInPlay = false;
     public int playStepsPerBatch = 16;
     public float playBatchDelay = 0.01f;
 
-    // Internal grid params
     private int cellCols;    // (mapWidth - 1) / 2
     private int cellRows;    // (mapHeight - 1) / 2
 
-    // map-level floor mask: true = floor, false = wall
     private bool[,] isFloor;
 
-    // RNG
-    private SimpleRNG rng;
+    private PCGRandom rng;
 
-    // stack of regions to divide (for iterative recursion)
     private struct Region { public int x, y, w, h; public Region(int x, int y, int w, int h) { this.x = x; this.y = y; this.w = w; this.h = h; } }
     private Region[] regionStack;
     private int stackTop;
 
-    // editor animation state
 #if UNITY_EDITOR
     private bool editorAnimating = false;
     private double editorLastBatchTime = 0.0;
@@ -55,7 +44,6 @@ public class RecursiveDivisionGenerator : MonoBehaviour
 
     private void Start()
     {
-        // intentionally empty: generation only via Editor buttons or manual Play coroutine
     }
 
     #region Public entry points
@@ -74,7 +62,6 @@ public class RecursiveDivisionGenerator : MonoBehaviour
         }
     }
 
-    // Synchronous (fast) generation for editor
     public void GenerateSync()
     {
         if (!ValidateSetup()) return;
@@ -88,7 +75,6 @@ public class RecursiveDivisionGenerator : MonoBehaviour
 #endif
     }
 
-    // Play-mode coroutine (optional)
     public System.Collections.IEnumerator GenerateRoutine()
     {
         if (!ValidateSetup()) yield break;
@@ -102,10 +88,9 @@ public class RecursiveDivisionGenerator : MonoBehaviour
             yield break;
         }
 
-        PaintAllFloors(); // start with empty field (floors) painted
+        PaintAllFloors(); 
         BuildInitialStack();
 
-        // animated: process some divisions per batch
         while (stackTop > 0)
         {
             int steps = Math.Min(playStepsPerBatch, stackTop);
@@ -163,18 +148,16 @@ public class RecursiveDivisionGenerator : MonoBehaviour
     {
         if (useRandomSeed)
             seed = Environment.TickCount;
-        rng = new SimpleRNG(seed);
+        rng = new PCGRandom(seed);
     }
 
     private void PrepareMapArrays()
     {
         isFloor = new bool[mapWidth, mapHeight];
-        // start with all floors (wall-adder). We'll set boundaries as walls and add internal walls.
         for (int x = 0; x < mapWidth; x++)
             for (int y = 0; y < mapHeight; y++)
                 isFloor[x, y] = true;
 
-        // set outer boundary walls
         for (int x = 0; x < mapWidth; x++)
         {
             isFloor[x, 0] = false;
@@ -186,18 +169,15 @@ public class RecursiveDivisionGenerator : MonoBehaviour
             isFloor[mapWidth - 1, y] = false;
         }
 
-        // allocate region stack with worst-case size (approx number of divisions)
         int worst = cellCols * cellRows * 2 + 16;
         regionStack = new Region[worst];
         stackTop = 0;
     }
 
-    // push/pop region stack
     private void PushRegion(Region r)
     {
         if (stackTop >= regionStack.Length)
         {
-            // resize
             Array.Resize(ref regionStack, regionStack.Length * 2);
         }
         regionStack[stackTop++] = r;
@@ -218,14 +198,11 @@ public class RecursiveDivisionGenerator : MonoBehaviour
 
     #region Core division logic
 
-    // Synchronous full recursive-like processing using explicit stack (depth-first)
     private void RunRecursiveDivisionSync()
     {
-        // start with empty field (floors)
         for (int x = 0; x < mapWidth; x++)
             for (int y = 0; y < mapHeight; y++)
                 isFloor[x, y] = true;
-        // boundary walls
         for (int x = 0; x < mapWidth; x++)
         {
             isFloor[x, 0] = false;
@@ -246,19 +223,15 @@ public class RecursiveDivisionGenerator : MonoBehaviour
         }
     }
 
-    // Process one division step: if region large enough, place wall with one gap,
-    // and push two subregions onto stack
     private void ProcessDivideAndPushChildren(Region r)
     {
         int x = r.x, y = r.y, w = r.w, h = r.h;
-        // base case: stop if cannot divide
         if (w < 2 || h < 2) return;
 
-        // choose orientation based on dimensions (prefer splitting the longer dimension)
         bool horizontal;
         if (w < h) horizontal = true;
         else if (h < w) horizontal = false;
-        else horizontal = rng.Next(2) == 0; // tie -> random
+        else horizontal = rng.Next(2) == 0; 
 
         if (horizontal)
         {
@@ -360,9 +333,6 @@ public class RecursiveDivisionGenerator : MonoBehaviour
     #endregion
 
 #if UNITY_EDITOR
-    // -------------------
-    // Editor-mode animated generation
-    // -------------------
 
     public void StartEditorAnimatedGeneration()
     {
@@ -422,7 +392,6 @@ public class RecursiveDivisionGenerator : MonoBehaviour
         }
     }
 
-    // Inspector buttons
     [UnityEditor.CustomEditor(typeof(RecursiveDivisionGenerator))]
     private class RecursiveDivisionEditor : UnityEditor.Editor
     {

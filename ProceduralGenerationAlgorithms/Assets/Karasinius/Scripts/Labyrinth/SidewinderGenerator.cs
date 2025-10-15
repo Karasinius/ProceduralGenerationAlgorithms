@@ -1,7 +1,3 @@
-// SidewinderGenerator.cs
-// Sidewinder maze algorithm Ч Editor-only generation buttons + Editor-mode animated build with batching.
-// Uses SimpleRNG for deterministic randomness (must be present in project).
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +6,6 @@ using UnityEngine.Tilemaps;
 [ExecuteAlways]
 public class SidewinderGenerator : MonoBehaviour
 {
-    // Directions (bit flags)
     private const int N = 1;
     private const int S = 2;
     private const int E = 4;
@@ -24,7 +19,7 @@ public class SidewinderGenerator : MonoBehaviour
     public Tilemap targetTilemap;
     public TileBase wallTile;
     public TileBase floorTile;
-    public int mapWidth = 81;   // рекомендуетс€ нечЄтные
+    public int mapWidth = 81;   
     public int mapHeight = 51;
     public Vector2Int mapOrigin = new Vector2Int(0, 0);
 
@@ -37,25 +32,23 @@ public class SidewinderGenerator : MonoBehaviour
     public int seed = 12345;
 
     [Header("Editor Animation (only editor)")]
-    public int editorStepsPerBatch = 200;   // сколько клеток обрабатывать за батч
-    public float editorBatchDelay = 0.03f;  // задержка между батчами (сек)
+    public int editorStepsPerBatch = 200;   
+    public float editorBatchDelay = 0.03f;  
 
     [Header("Play-mode (optional)")]
     public bool animateInPlay = false;
     public int playStepsPerBatch = 200;
     public float playBatchDelay = 0.01f;
 
-    // Internal
     private int cellCols; // (mapWidth - 1) / 2
     private int cellRows; // (mapHeight - 1) / 2
 
     private int[,] cellFlags; // cellCols x cellRows bitflags (N/S/E/W)
     private bool[,] isFloor; // mapWidth x mapHeight (tile-level)
 
-    private SimpleRNG rng;
+    private Well512Random rng;
 
 #if UNITY_EDITOR
-    // Editor animation state
     private bool editorAnimating = false;
     private int editorCx = 0;
     private int editorCy = 0;
@@ -63,10 +56,8 @@ public class SidewinderGenerator : MonoBehaviour
     private double editorLastBatchTime = 0.0;
 #endif
 
-    // No auto-run
     private void Start()
     {
-        // intentionally empty: generation only via Editor buttons or manual Play coroutine.
     }
 
     #region Public entry points
@@ -85,14 +76,13 @@ public class SidewinderGenerator : MonoBehaviour
         }
     }
 
-    // synchronous (fast) generation used in editor
     public void GenerateSync()
     {
         if (!ValidateSetup()) return;
         PrepareRandom();
         PrepareMapArrays();
         RunSidewinderSync();
-        FinalizeMapCenters(); // ensure all cell centers are floors
+        FinalizeMapCenters();
         PaintTilemap();
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
@@ -100,7 +90,6 @@ public class SidewinderGenerator : MonoBehaviour
 #endif
     }
 
-    // Optional Play-mode coroutine (animated in Play)
     public System.Collections.IEnumerator GenerateRoutine()
     {
         if (!ValidateSetup()) yield break;
@@ -115,17 +104,14 @@ public class SidewinderGenerator : MonoBehaviour
             yield break;
         }
 
-        // Animated in Play-mode
         PaintAllWalls();
 
         int cx = 0, cy = 0, runStart = 0;
-        //int steps = 0;
         while (cy < cellRows)
         {
             int batch = Math.Min(playStepsPerBatch, 100000);
             for (int b = 0; b < batch; b++)
             {
-                // process single cell (cx,cy)
                 bool endRun = (cy > 0) && (cx + 1 == cellCols || rng.Next(Math.Max(1, runEndWeight)) == 0);
                 if (endRun)
                 {
@@ -139,7 +125,6 @@ public class SidewinderGenerator : MonoBehaviour
                     CarveEast(cx, cy);
                 }
 
-                // advance to next cell
                 cx++;
                 if (cx >= cellCols)
                 {
@@ -164,7 +149,6 @@ public class SidewinderGenerator : MonoBehaviour
 
     private void RunSidewinderSync()
     {
-        // Iterate over cell-grid row-wise
         for (int cy = 0; cy < cellRows; cy++)
         {
             int runStart = 0;
@@ -174,7 +158,7 @@ public class SidewinderGenerator : MonoBehaviour
                 if (endRun)
                 {
                     int span = cx - runStart + 1;
-                    int chosen = runStart + rng.Next(span); // rng.Next(span) gives [0..span-1]
+                    int chosen = runStart + rng.Next(span); 
                     CarveNorth(chosen, cy);
                     runStart = cx + 1;
                 }
@@ -192,11 +176,9 @@ public class SidewinderGenerator : MonoBehaviour
 
     private void CarveEast(int cx, int cy)
     {
-        // set flags
         cellFlags[cx, cy] |= E;
         if (cx + 1 < cellCols) cellFlags[cx + 1, cy] |= W;
 
-        // mark floor at centers and middle
         int ax = cx * 2 + 1;
         int ay = cy * 2 + 1;
         int bx = (cx + 1) * 2 + 1;
@@ -209,7 +191,7 @@ public class SidewinderGenerator : MonoBehaviour
 
     private void CarveNorth(int cx, int cy)
     {
-        if (cy <= 0) return; // cannot carve north from top row
+        if (cy <= 0) return; 
         cellFlags[cx, cy] |= N;
         cellFlags[cx, cy - 1] |= S;
 
@@ -223,7 +205,6 @@ public class SidewinderGenerator : MonoBehaviour
         SetFloorAtMapLocal(ax, (ay + by) / 2);
     }
 
-    // Ensure every cell center is floor (useful for cells that never had edges carved)
     private void FinalizeMapCenters()
     {
         for (int cy = 0; cy < cellRows; cy++)
@@ -284,7 +265,7 @@ public class SidewinderGenerator : MonoBehaviour
     {
         if (useRandomSeed)
             seed = Environment.TickCount;
-        rng = new SimpleRNG(seed);
+        rng = new Well512Random(seed);
     }
 
     private void PrepareMapArrays()
@@ -324,10 +305,6 @@ public class SidewinderGenerator : MonoBehaviour
     #endregion
 
 #if UNITY_EDITOR
-    // -------------------
-    // Editor-mode animated generation
-    // -------------------
-
     public void StartEditorAnimatedGeneration()
     {
         if (!ValidateSetup()) return;
@@ -340,12 +317,10 @@ public class SidewinderGenerator : MonoBehaviour
         PrepareRandom();
         PrepareMapArrays();
 
-        // initial paint: walls
         PaintAllWalls();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        // init editor-step state
         editorCx = 0;
         editorCy = 0;
         editorRunStart = 0;
@@ -400,7 +375,6 @@ public class SidewinderGenerator : MonoBehaviour
                 CarveEast(cx, cy);
             }
 
-            // advance
             editorCx++;
             if (editorCx >= cellCols)
             {
@@ -412,15 +386,12 @@ public class SidewinderGenerator : MonoBehaviour
             processed++;
         }
 
-        // update visual after batch
         PaintTilemap();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        // if finished, will be stopped at next loop check
     }
 
-    // inspector buttons
     [UnityEditor.CustomEditor(typeof(SidewinderGenerator))]
     private class SidewinderEditor : UnityEditor.Editor
     {

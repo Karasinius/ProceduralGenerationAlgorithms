@@ -1,8 +1,3 @@
-// KruskalMazeGenerator.cs
-// Generates a perfect maze using randomized Kruskal's algorithm.
-// Editor-only generation buttons + editor-mode animated build with batching.
-// Requires SimpleRNG.cs in project.
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,7 +6,6 @@ using UnityEngine.Tilemaps;
 [ExecuteAlways]
 public class KruskalMazeGenerator : MonoBehaviour
 {
-    // Direction flags (like typical maze representations)
     private const int N = 1;
     private const int S = 2;
     private const int E = 4;
@@ -25,7 +19,7 @@ public class KruskalMazeGenerator : MonoBehaviour
     public Tilemap targetTilemap;
     public TileBase wallTile;
     public TileBase floorTile;
-    public int mapWidth = 81;    // рекомендую нечётные размеры
+    public int mapWidth = 81;   
     public int mapHeight = 51;
     public Vector2Int mapOrigin = new Vector2Int(0, 0);
 
@@ -34,38 +28,33 @@ public class KruskalMazeGenerator : MonoBehaviour
     public int seed = 12345;
 
     [Header("Editor Animation (only editor)")]
-    public int editorStepsPerBatch = 200;   // сколько ребёр обрабатывать за батч
-    public float editorBatchDelay = 0.03f;  // задержка между батчами (сек)
+    public int editorStepsPerBatch = 200;   
+    public float editorBatchDelay = 0.03f;  
 
     [Header("Play-mode (optional)")]
     public bool animateInPlay = false;
     public int playStepsPerBatch = 200;
     public float playBatchDelay = 0.01f;
 
-    // internal state
     private int cellCols;   // (mapWidth - 1) / 2
     private int cellRows;   // (mapHeight - 1) / 2
 
-    private int[,] cellFlags; // cellCols x cellRows: store N/S/E/W bits per cell (for constructing passages)
-    private bool[,] isFloor;  // mapWidth x mapHeight full map floor mask
+    private int[,] cellFlags; 
+    private bool[,] isFloor;  
 
-    private SimpleRNG rng;
+    private Mulberry32Random rng;
 
-    // edges array used in animation
     private Edge[] edges;
     private int edgesCount;
 
-    // editor animation state
 #if UNITY_EDITOR
     private bool editorAnimating = false;
     private int editorEdgeIndex = 0;
     private double editorLastBatchTime = 0.0;
 #endif
 
-    // play-mode coroutine handle (if you use Play-mode animation)
     private Coroutine playCoroutine = null;
 
-    // Edge struct
     private struct Edge
     {
         public int cx;
@@ -77,13 +66,11 @@ public class KruskalMazeGenerator : MonoBehaviour
         }
     }
 
-    // Disjoint set (union-find)
     private int[] dsuParent;
     private int[] dsuRank;
 
     private void Start()
     {
-        // intentionally empty: generation runs only from editor buttons (or manual StartCoroutine in Play)
     }
 
     #region Public entry points
@@ -102,7 +89,6 @@ public class KruskalMazeGenerator : MonoBehaviour
         }
     }
 
-    // Synchronous generation (editor)
     public void GenerateSync()
     {
         if (!ValidateSetup()) return;
@@ -118,7 +104,6 @@ public class KruskalMazeGenerator : MonoBehaviour
 #endif
     }
 
-    // Play-mode coroutine (optional)
     public System.Collections.IEnumerator GenerateRoutine()
     {
         if (!ValidateSetup()) yield break;
@@ -134,7 +119,6 @@ public class KruskalMazeGenerator : MonoBehaviour
             yield break;
         }
 
-        // animated in play: process edges in batches
         PaintAllWalls();
         InitializeDSU();
 
@@ -205,20 +189,17 @@ public class KruskalMazeGenerator : MonoBehaviour
     {
         if (useRandomSeed)
             seed = Environment.TickCount;
-        rng = new SimpleRNG(seed);
+        rng = new Mulberry32Random(seed);
     }
 
     private void PrepareGridStructures()
     {
         cellFlags = new int[cellCols, cellRows];
         isFloor = new bool[mapWidth, mapHeight];
-        // initially nothing carved; we will carve when joining sets
     }
 
-    // Build a list of all possible internal edges (edges connecting adjacent cells).
     private void BuildEdgesList()
     {
-        // maximum edges roughly = (cellCols*(cellRows-1) + (cellCols-1)*cellRows)
         List<Edge> tmp = new List<Edge>();
         for (int y = 0; y < cellRows; y++)
         {
@@ -232,20 +213,17 @@ public class KruskalMazeGenerator : MonoBehaviour
         edgesCount = edges.Length;
     }
 
-    // Fisher-Yates shuffle using SimpleRNG
     private void ShuffleEdges()
     {
         for (int i = edgesCount - 1; i > 0; i--)
         {
-            int j = rng.Next(i + 1); // [0..i]
-            // swap i and j
+            int j = rng.Next(i + 1); 
             Edge t = edges[i];
             edges[i] = edges[j];
             edges[j] = t;
         }
     }
 
-    // Initialize DSU arrays
     private void InitializeDSU()
     {
         int n = cellCols * cellRows;
@@ -267,7 +245,6 @@ public class KruskalMazeGenerator : MonoBehaviour
     {
         int p = dsuParent[i];
         if (p == i) return i;
-        // path compression
         dsuParent[i] = FindRoot(p);
         return dsuParent[i];
     }
@@ -282,7 +259,6 @@ public class KruskalMazeGenerator : MonoBehaviour
     {
         int ra = FindRoot(a), rb = FindRoot(b);
         if (ra == rb) return;
-        // union by rank
         if (dsuRank[ra] < dsuRank[rb])
             dsuParent[ra] = rb;
         else if (dsuRank[rb] < dsuRank[ra])
@@ -294,10 +270,8 @@ public class KruskalMazeGenerator : MonoBehaviour
         }
     }
 
-    // carve edge into cellFlags + isFloor
     private void CarveEdge(Edge e)
     {
-        // set both cells and the connecting wall between them
         int ax = e.cx * 2 + 1;
         int ay = e.cy * 2 + 1;
         int nx = e.cx + DX[e.dir];
@@ -305,16 +279,13 @@ public class KruskalMazeGenerator : MonoBehaviour
         int bx = nx * 2 + 1;
         int by = ny * 2 + 1;
 
-        // mark cell centers
         SetFloorAtMapLocal(ax, ay);
         SetFloorAtMapLocal(bx, by);
 
-        // mark passage between centers
         int mx = (ax + bx) / 2;
         int my = (ay + by) / 2;
         SetFloorAtMapLocal(mx, my);
 
-        // also update logical cell flags (if needed later)
         cellFlags[e.cx, e.cy] |= e.dir;
         if (nx >= 0 && ny >= 0 && nx < cellCols && ny < cellRows)
             cellFlags[nx, ny] |= OPPOSITE[e.dir];
@@ -332,7 +303,6 @@ public class KruskalMazeGenerator : MonoBehaviour
 
     private void RunKruskalSync()
     {
-        // clear arrays
         for (int x = 0; x < mapWidth; x++)
             for (int y = 0; y < mapHeight; y++)
                 isFloor[x, y] = false;
@@ -388,9 +358,6 @@ public class KruskalMazeGenerator : MonoBehaviour
     #endregion
 
 #if UNITY_EDITOR
-    // -------------------
-    // Editor-mode animated generation
-    // -------------------
 
     public void StartEditorAnimatedGeneration()
     {
@@ -408,7 +375,6 @@ public class KruskalMazeGenerator : MonoBehaviour
 
         InitializeDSU();
 
-        // paint walls initially
         PaintAllWalls();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -455,19 +421,16 @@ public class KruskalMazeGenerator : MonoBehaviour
             processed++;
         }
 
-        // Update visual after batch
         PaintTilemap();
         UnityEditor.EditorUtility.SetDirty(targetTilemap);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        // finish if done
         if (editorEdgeIndex >= edgesCount)
         {
             StopEditorAnimatedGeneration();
         }
     }
 
-    // Custom inspector buttons
     [UnityEditor.CustomEditor(typeof(KruskalMazeGenerator))]
     private class KruskalEditor : UnityEditor.Editor
     {

@@ -1,6 +1,5 @@
-// SimpleRNG.cs
 // Простой детерминированный генератор на базе SplitMix64.
-// API подобен System.Random: Next(min,max), Next(max), NextDouble(), NextBool(p), NextUInt() и т.д.
+// Период 2^32
 
 using System;
 
@@ -8,7 +7,6 @@ public class SimpleRNG
 {
     private ulong state;
 
-    // Конструктор с int seed
     public SimpleRNG(int seed)
     {
         Init((ulong)seed);
@@ -19,10 +17,9 @@ public class SimpleRNG
         Init((ulong)Environment.TickCount);
     }
 
-    // Инициализация явным seed (ulong используется внутри)
     public void Init(ulong seed)
     {
-        // SplitMix64 рекомендует добавлять фиксированный оффсет
+        // Фиксированный оффсет
         state = seed + 0x9E3779B97F4A7C15UL;
     }
 
