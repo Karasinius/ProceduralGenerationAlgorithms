@@ -19,12 +19,12 @@ public class PrimsMazeGenerator : MonoBehaviour
 
     [Header("Editor Animation (only editor)")]
     public int editorStepsPerBatch = 200;   
-    public float editorBatchDelay = 0.03f;  
+    public float editorBatchDelay = 0.03f;
 
-    [Header("Play-mode")]
-    public bool animateInPlay = false;
-    public int playStepsPerBatch = 200;
-    public float playBatchDelay = 0.01f;
+    //[Header("Play-mode")]
+    [HideInInspector] public bool animateInPlay = false;
+    [HideInInspector] public int playStepsPerBatch = 200;
+    [HideInInspector] public float playBatchDelay = 0.01f;
 
     private int cellCols; // = (mapWidth - 1) / 2
     private int cellRows; // = (mapHeight - 1) / 2
@@ -407,18 +407,18 @@ public class PrimsMazeGenerator : MonoBehaviour
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Generate (Play Mode)"))
-            {
-                if (Application.isPlaying)
-                {
-                    if (script.playCoroutine != null) script.StopCoroutine(script.playCoroutine);
-                    script.playCoroutine = script.StartCoroutine(script.GenerateRoutine());
-                }
-                else
-                {
-                    Debug.LogWarning("Enter Play mode to run Play-mode coroutine.");
-                }
-            }
+            //if (GUILayout.Button("Generate (Play Mode)"))
+            //{
+            //    if (Application.isPlaying)
+            //    {
+            //        if (script.playCoroutine != null) script.StopCoroutine(script.playCoroutine);
+            //        script.playCoroutine = script.StartCoroutine(script.GenerateRoutine());
+            //    }
+            //    else
+            //    {
+            //        Debug.LogWarning("Enter Play mode to run Play-mode coroutine.");
+            //    }
+            //}
             if (GUILayout.Button("Clear Area"))
             {
                 if (script.targetTilemap != null)
