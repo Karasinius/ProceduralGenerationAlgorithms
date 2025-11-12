@@ -100,3 +100,4 @@ ehthumbs.db
 
 
 *.dylib
+**/[Ll]ibrary/
