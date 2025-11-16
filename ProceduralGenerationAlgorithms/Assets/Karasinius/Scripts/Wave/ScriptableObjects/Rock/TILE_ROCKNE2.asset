@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b837b76c538cfd47a7442634e24215c, type: 3}
-  m_Name: TILE_WATER
+  m_Name: TILE_ROCKNE2
   m_EditorClassIdentifier: 
-  id: 1
-  tile: {fileID: 11400000, guid: e4013c51d3662dd489c6b79b31f2cd0e, type: 2}
-  weight: 12
-  edges: 01000000010000000100000001000000
+  id: 35
+  tile: {fileID: 11400000, guid: f0a7c7059b64bdc4886be25192983aae, type: 2}
+  weight: 2
+  edges: 00000000000000000c0000000b000000

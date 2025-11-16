@@ -1,4 +1,4 @@
-// WfcCell.cs
+
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -26,14 +26,10 @@ public class WfcCell
 
     public bool IsCollapsed => possibilities.Count == 1;
 
-    /// <summary>
-    /// Collapse cell to a single tile using weights.
-    /// </summary>
     public void CollapseWeighted(System.Random rng)
     {
         if (IsCollapsed) return;
 
-        // Weighted random choice:
         long total = 0;
         foreach (var t in possibilities) total += Mathf.Max(1, t.weight);
 
@@ -48,34 +44,25 @@ public class WfcCell
                 break;
             }
         }
-        // Safety: if not selected (due to rounding), choose last
         if (!IsCollapsed && possibilities.Count > 0)
         {
             possibilities = new List<WfcTileType> { possibilities[possibilities.Count - 1] };
         }
     }
 
-    /// <summary>
-    /// Constrain this cell by neighbour possibilities that face it from given direction.
-    /// direction = index in neighbour: 0=N,1=E,2=S,3=W (the side of neighbour that's adjacent to this cell).
-    /// Returns NoChange / Reduced / Conflict.
-    /// </summary>
     public ConstrainResult Constrain(IEnumerable<WfcTileType> neighbourPossibilities, int direction)
     {
         if (possibilities.Count == 0) return ConstrainResult.Conflict;
 
-        // connectors = set of edge codes that neighbours provide towards this cell (they use 'direction')
         HashSet<EdgeType> connectors = new HashSet<EdgeType>();
         foreach (var np in neighbourPossibilities)
         {
             connectors.Add(np.edges[direction]);
         }
 
-        // opposite side index: if neighbour says its direction = dir, then this cell must match opposite
         int opposite = (direction + 2) % 4;
 
         bool reduced = false;
-        // Remove any possibility that doesn't have its opposite edge present in connectors
         for (int i = possibilities.Count - 1; i >= 0; i--)
         {
             var p = possibilities[i];
