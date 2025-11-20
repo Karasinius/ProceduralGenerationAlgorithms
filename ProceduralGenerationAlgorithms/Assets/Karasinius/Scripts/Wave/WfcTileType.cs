@@ -18,7 +18,29 @@ public enum EdgeType
     ROCK_E = 12,
     ROCK_S = 13,
     ROCK_W = 14,
-    ROCK = 15
+    ROCK = 15,
+
+
+    ROAD_N = 16,
+    ROAD_E = 17,
+    ROAD_S = 18,
+    ROAD_W = 19,
+    ROAD = 20,
+
+    COLUMN_N = 21,
+    COLUMN_E = 22,
+    COLUMN_S = 23,
+    COLUMN_W = 24,
+    COLUMN = 25,
+    COLUMN_L = 26,
+    COLUMN_R = 27,
+    COLUMN_GRASS = 28,
+    COLUMN_C = 29,
+
+    COLUMN_BROKEN_1 = 30,
+    COLUMN_BROKEN_2 = 31,
+    COLUMN_BROKEN_3 = 32,
+    COFFIN = 33,
 }
 
 [CreateAssetMenu(menuName = "WFC/TileType", fileName = "WfcTileType")]

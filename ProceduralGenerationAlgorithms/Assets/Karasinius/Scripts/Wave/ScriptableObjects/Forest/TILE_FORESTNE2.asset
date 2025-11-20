@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 31
   tile: {fileID: 11400000, guid: 0959fb2f4f05ddb42a57d6e512b0a59a, type: 2}
-  weight: 2
+  weight: 4
   edges: 02000000020000000800000007000000
